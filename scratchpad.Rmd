@@ -1,6 +1,6 @@
 ---
 title: "scratchpad"
-author: "Ethan Horn"
+author: "Ethan Horn, David Lopez"
 date: "2023-11-17"
 output: pdf_document
 ---
