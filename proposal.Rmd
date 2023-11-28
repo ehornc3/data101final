@@ -1,0 +1,28 @@
+---
+title: "Project Proposal"
+author: "Ethan Horn, David Lopez"
+date: "2023-11-17"
+output: pdf_document
+---
+
+# The task or problem your group specifically wants to address, including technical and business terms details.
+
+We are embarking on a comprehensive research initiative leveraging datasets from reputable sources, including the CDC and Global Temperature datasets. Our primary focus is to investigate the correlation between the Earth's rising temperatures and the surge in heat-related hospitalizations. Through meticulous analysis of these datasets, our goal is to discern patterns that will enable us to make informed predictions about the future occurrences of hospitalizations.
+
+# What data science skills or tools would you use in the study?
+
+The research process, data tidying, and analysis will be conducted using R Markdown, ensuring transparency and reproducibility in our findings. A set seed will be used, ensuring that the data analysis is reproducible and collaborative. Git will be used to track history of R Markdown files, and also enhance collaboration by making sharing files easier.
+
+# The source and background of data.
+
+The data we will be using in our analysis comes from two sources. Data including numerous climate change metrics is sourced from Kaggle. <https://www.kaggle.com/datasets/berkeleyearth/climate-change-earth-surface-temperature-data/>. This dataset includes various temperature metrics dating back centuries, including averages on the city, state, and country levels.
+
+The second source of our data, regarding heat related hospitalizations, is from the CDC's public API. <https://ephtracking.cdc.gov/apigateway/api/v1/getCoreHolder/431/1/all/all/1/2021,2020,2019,2018,2017,2016,2015,2014,2013,2012,2011,2010,2009,2008,2007,2006,2005,2004,2003,2002,2001,2000/0/0>. The data from this source is more limited, only dating back a few decades. It also has some missing data, as states in the US are not obliged to provide this data to the CDC.
+
+# How will you prepare the data for analysis?
+
+The data will be prepared for analysis in a few different ways, depending on the source of the data. The metrics involving climate change will be loaded using the `read_csv` function from the `readr` library. The data from the CDC regarding heat related hospitalizations will be loaded using the `fromJSON` function from the `jsonlite` library. Optionally, this data can be loaded directly by making a request to the CDC's public APIs, to keep the data up to date. The data will be tidied and use consistent naming conventions, and some other data preprocessing may be done to remove other variables not needed for our model.
+
+# What analytical method would you use to test your hypothesis, and how does the analytical method suit your thesis?
+
+Our proposed hypothesis is that there is a strong positive correlation between various climate change metrics and the number of heat related hospitalizations recorded in the US. We will test this using some form of regression analysis, which will allow us to create a model that can correlate multiple two-dimensional sets of data with one another. This provides us statistics that determine the strength of the correlation. We can also use the model to extrapolate and make predictions on missing data from our datasets, as well as make predictions for how these trends may continue in the future.
