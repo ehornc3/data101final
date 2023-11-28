@@ -10,10 +10,13 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 ```
 
-```{r load_data}
+```{r load_csv}
 global.lt.city      <- read_csv('datasets/GlobalLandTemperaturesByCity.csv')
 global.lt.country   <- read_csv('datasets/GlobalLandTemperaturesByCountry.csv')
 global.lt.majorcity <- read_csv('datasets/GlobalLandTemperaturesByMajorCity.csv')
 global.lt.state     <- read_csv('datasets/GlobalLandTemperaturesByState.csv')
 global.temps        <- read_csv('datasets/GlobalTemperatures.csv')
+```
+```{r load_json}
+cdc.data <- jsonlite::fromJSON('datasets/cdc.json')
 ```
