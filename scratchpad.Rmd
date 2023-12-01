@@ -5,18 +5,47 @@ date: "2023-11-17"
 output: word_document
 ---
 
-```{r setup, include=FALSE}
+```{r setup, include=FALSE, message=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
+set.seed(19)
 ```
 
-```{r load_csv}
+```{r load_data, message=FALSE}
 global.lt.city      <- read_csv('datasets/GlobalLandTemperaturesByCity.csv')
 global.lt.country   <- read_csv('datasets/GlobalLandTemperaturesByCountry.csv')
 global.lt.majorcity <- read_csv('datasets/GlobalLandTemperaturesByMajorCity.csv')
 global.lt.state     <- read_csv('datasets/GlobalLandTemperaturesByState.csv')
 global.temps        <- read_csv('datasets/GlobalTemperatures.csv')
+cdc.raw             <- jsonlite::fromJSON('datasets/cdc.json')
 ```
-```{r load_json}
-cdc.data <- jsonlite::fromJSON('datasets/cdc.json')
+```{r tidy_data}
+cdc.dat <- cdc.raw$tableResult %>%
+  filter(hatchingId == -1) %>%  # Filter out "Unstable" points of data
+  select(geo, geoId, year, dataValue) %>%
+  rename(state           = geo,
+         state.id        = geoId,
+         hosp.per.capita = dataValue) %>%
+  mutate(state.id        = as.numeric(state.id),
+         year            = as.numeric(year),
+         hosp.per.capita = as.numeric(hosp.per.capita))
+
+
+temps <- global.lt.state %>%
+        filter(Country == "United States") %>%
+        select(dt, AverageTemperature, State) %>%
+        rename(date = dt,
+               avg.temp.celsius = AverageTemperature,
+               state = State) %>%
+        filter(date >= as.Date("2000-01-01"))
+```
+
+```{r}
+model <- lm(hosp.per.capita ~ year, data=cdc.dat)
+
+ggplot(cdc.dat, aes(year, hosp.per.capita)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = TRUE)
+
+summary(model)
 ```
