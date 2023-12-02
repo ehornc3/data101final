@@ -2,7 +2,6 @@
 .Rhistory
 .RData
 .Ruserdata
-datasets/*.csv
 .DS_Store
 datasets/.DS_Store
 .idea/
