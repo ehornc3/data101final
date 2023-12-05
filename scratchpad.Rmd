@@ -11,14 +11,10 @@ library(tidyverse)
 library(ggplot2)
 set.seed(19)
 library(lubridate)
+library(gghighlight)
 ```
 
 ```{r load_data, message=FALSE}
-# global.lt.city      <- read_csv('datasets/GlobalLandTemperaturesByCity.csv')
-# global.lt.country   <- read_csv('datasets/GlobalLandTemperaturesByCountry.csv')
-# global.lt.majorcity <- read_csv('datasets/GlobalLandTemperaturesByMajorCity.csv')
-# global.lt.state     <- read_csv('datasets/GlobalLandTemperaturesByState.csv')
-# global.temps        <- read_csv('datasets/GlobalTemperatures.csv')
 hri.emer.raw          <- jsonlite::fromJSON('datasets/hri_emergencyvisits.json')
 hri.hosp.raw          <- jsonlite::fromJSON('datasets/hri_hospitalization.json')
 hri.mort.raw          <- jsonlite::fromJSON('datasets/hri_mortality.json')
@@ -77,14 +73,6 @@ temp.state <- temp.state.raw %>%
   select(year, temp, STUSAB, STATE_NAME) %>%
   rename(state.code = STUSAB,
          state      = STATE_NAME)
-
-# temps <- global.lt.state %>%
-#         filter(Country == "United States") %>%
-#         select(dt, AverageTemperature, State) %>%
-#         rename(date = dt,
-#                avg.temp.celsius = AverageTemperature,
-#                state = State) %>%
-#         filter(date >= as.Date("2000-01-01"))
 ```
 
 ```{r emer_cor}
@@ -93,17 +81,50 @@ hri.emer.model <- lm(emer.per.capita ~ year, data=hri.emer)
 ggplot(hri.emer, aes(year, emer.per.capita)) +
   geom_point() +
   geom_smooth(method = "lm", se = TRUE) +
-  geom_line(aes(year, emer.per.capita), data = aggregate(emer.per.capita ~ year, hri.emer, mean))
+  geom_line(aes(year, emer.per.capita), data = aggregate(emer.per.capita ~ year, hri.emer, mean)) +
+  labs(title = "Yearly HRI Emergency Room Visits per Capita by State",
+       x     = "Year",
+       y     = "Emergency Room visits per Capita (100,000)")
+
+ggplot(hri.emer, aes(factor(year), emer.per.capita)) +
+        geom_boxplot() +
+        labs(title = "Yearly HRI Emergency Room Visits per Capita by State",
+             x     = "Year",
+             y     = "Emergency Room visits per Capita (100,000)")
+
+ggplot(hri.emer, aes(year, emer.per.capita)) +
+        geom_point() +
+        gghighlight(emer.per.capita >= quantile(emer.per.capita, .99), label_key = state, use_group_by = FALSE) +
+        labs(title = "Yearly HRI Emergency Room Visits per Capita by State",
+             x     = "Year",
+             y     = "Emergency Room visits per Capita (100,000)")
 
 summary(hri.emer.model)
 ```
+
 ```{r hosp_cor}
 hri.hosp.model <- lm(hosp.per.capita ~ year, data=hri.hosp)
 
 ggplot(hri.hosp, aes(year, hosp.per.capita)) +
   geom_point() +
   geom_smooth(method = "lm", se = TRUE) +
-  geom_line(aes(year, hosp.per.capita), data = aggregate(hosp.per.capita ~ year, hri.hosp, mean))
+  geom_line(aes(year, hosp.per.capita), data = aggregate(hosp.per.capita ~ year, hri.hosp, mean)) +
+  labs(title = "Yearly HRI Hospitalizations per Capita by State",
+       x     = "Year",
+       y     = "Hospitalizations per Capita (100,000)")
+
+ggplot(hri.hosp, aes(factor(year), hosp.per.capita)) +
+        geom_boxplot() +
+        labs(title = "Yearly HRI Hospitalizations per Capita by State",
+             x     = "Year",
+             y     = "Hospitalizations per Capita (100,000)")
+
+ggplot(hri.hosp, aes(year, hosp.per.capita, state)) +
+        geom_point() +
+        gghighlight(hosp.per.capita >= quantile(hosp.per.capita, .99), label_key = state, use_group_by = FALSE) +
+        labs(title = "Yearly HRI Hospitalizations per Capita by State",
+             x     = "Year",
+             y     = "Hospitalizations per Capita (100,000)")
 
 summary(hri.hosp.model)
 ```
@@ -113,7 +134,16 @@ hri.mort.model <- lm(mortalities.total ~ year, data=hri.mort)
 
 ggplot(hri.mort, aes(year, mortalities.total)) +
   geom_point() +
-  geom_smooth(method = "lm", se = TRUE)
+  geom_smooth(method = "lm", se = TRUE) +
+  labs(title = "Yearly HRI Mortalities by State",
+       x     = "Year",
+       y     = "HRI Related Mortalities (Total)")
+
+ggplot(hri.mort, aes(factor(year), mortalities.total)) +
+        geom_boxplot() +
+        labs(title = "Yearly HRI Mortalities by State",
+             x     = "Year",
+             y     = "HRI Related Mortalities (Total)")
 
 summary(hri.mort.model)
 ```
@@ -121,28 +151,29 @@ summary(hri.mort.model)
 ```{r temp_cor}
 temp.state.model <- lm(temp ~ year, data=temp.state)
 
-ggplot(temp.state, aes(year, temp)) +
-        geom_point() +
-        geom_smooth(method = "lm", se = TRUE) +
-        geom_line(aes(year, temp), data = aggregate(temp ~ year, temp.state, mean))
+ggplot(temp.state, aes(year, temp, fill = state, colour = state)) +
+        geom_line() +
+        labs(title = "Yearly Average Temperature by State",
+             x     = "Year",
+             y     = "Mean Yearly Temperature (deg F)")
+
+ggplot(temp.state, aes(factor(year), temp)) +
+        geom_boxplot() +
+        labs(title = "Yearly Average Temperature by State",
+             x     = "Year",
+             y     = "Mean Yearly Temperature (deg F)")
 
 summary(temp.state.model)
 ```
 
-```{r}
+```{r co2_cor}
 co2.model <- lm(ppm ~ date, data= co2)
 
 ggplot(co2, aes(date, ppm)) +
   geom_point() +
   geom_smooth(method = "lm", se = TRUE)
 
-summary (co2.model)
-hri.emer
-hri.hosp
-hri.mort
-co2
-co2$year <- year(co2$date)
-co2
+summary(co2.model)
 ```
 
 ```{r co2_graph, eval=FALSE}
@@ -213,4 +244,22 @@ summary(lm(hosp.per.capita ~ ppm, data=hri.hosp.co2))
 ggplot(hri.hosp.co2, aes(ppm, hosp.per.capita)) +
   geom_point() +
   geom_smooth(method="lm", se=TRUE)
+```
+
+```{r emer-by-co2-temp}
+hri.emer.co2.temp <- hri.emer.co2 %>%
+        left_join(temp.state)
+
+hri.emer.co2.temp.model <- lm(emer.per.capita ~ ppm + temp, data = hri.emer.co2.temp)
+
+summary(hri.emer.co2.temp.model)
+```
+
+```{r hosp-by-co2-temp}
+hri.hosp.co2.temp <- hri.hosp.co2 %>%
+        left_join(temp.state)
+
+hri.hosp.co2.temp.model <- lm(hosp.per.capita ~ ppm + temp, data = hri.hosp.co2.temp)
+
+summary(hri.hosp.co2.temp.model)
 ```
