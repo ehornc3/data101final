@@ -24,6 +24,9 @@ hri.hosp.raw          <- jsonlite::fromJSON('datasets/hri_hospitalization.json')
 hri.mort.raw          <- jsonlite::fromJSON('datasets/hri_mortality.json')
 
 co2.raw               <- read_csv('datasets/Atmospheric_CO2_Concentrations.csv')
+
+temp.state.raw        <- read_csv('datasets/climdiv_state_year.csv')
+temp.state.states     <- read_csv('datasets/model_state.csv')
 ```
 ```{r tidy_data}
 hri.emer <- hri.emer.raw$tableResult %>%
@@ -61,10 +64,17 @@ co2 <- co2.raw %>%
   select(Date, Value) %>%
   rename(date = Date,
          ppm  = Value) %>%
-  mutate(date = str_replace(date, "M", "-"),
-         date = paste0(date, '-01'),
-         date = as.Date(date)) %>%
+  mutate(date  = str_replace(date, "M", "-"),
+         date  = paste0(date, '-01'),
+         date  = as.Date(date),
+         year  = lubridate::year(date),
+         month = lubridate::month(date)) %>%
   filter(date >= as.Date("2000-01-01"))
+
+temp.state <- temp.state.raw %>%
+  filter(year >= 2000) %>%
+  left_join(temp.state.states, by = join_by(fips)) %>%
+  select(year, temp, STUSAB, STATE_NAME)
 
 # temps <- global.lt.state %>%
 #         filter(Country == "United States") %>%
@@ -80,7 +90,8 @@ hri.emer.model <- lm(emer.per.capita ~ year, data=hri.emer)
 
 ggplot(hri.emer, aes(year, emer.per.capita)) +
   geom_point() +
-  geom_smooth(method = "lm", se = TRUE)
+  geom_smooth(method = "lm", se = TRUE) +
+  geom_line(aes(year, emer.per.capita), data = aggregate(emer.per.capita ~ year, hri.emer, mean))
 
 summary(hri.emer.model)
 ```
@@ -89,12 +100,13 @@ hri.hosp.model <- lm(hosp.per.capita ~ year, data=hri.hosp)
 
 ggplot(hri.hosp, aes(year, hosp.per.capita)) +
   geom_point() +
-  geom_smooth(method = "lm", se = TRUE)
+  geom_smooth(method = "lm", se = TRUE) +
+  geom_line(aes(year, hosp.per.capita), data = aggregate(hosp.per.capita ~ year, hri.hosp, mean))
 
 summary(hri.hosp.model)
 ```
 
-```{r hosp_cor}
+```{r mort_cor}
 hri.mort.model <- lm(mortalities.total ~ year, data=hri.mort)
 
 ggplot(hri.mort, aes(year, mortalities.total)) +
@@ -103,6 +115,18 @@ ggplot(hri.mort, aes(year, mortalities.total)) +
 
 summary(hri.mort.model)
 ```
+
+```{r temp_cor}
+temp.state.model <- lm(temp ~ year, data=temp.state)
+
+ggplot(temp.state, aes(year, temp)) +
+        geom_point() +
+        geom_smooth(method = "lm", se = TRUE) +
+        geom_line(aes(year, temp), data = aggregate(temp ~ year, temp.state, mean))
+
+summary(temp.state.model)
+```
+
 ```{r}
 co2.model <- lm(ppm ~ date, data= co2)
 
@@ -119,7 +143,7 @@ co2$year <- year(co2$date)
 co2
 ```
 
-```{r}
+```{r co2_graph}
 poly_smooth <- function(data, degree, x_var, y_var) {
   data[[x_var]] <- as.numeric(data[[x_var]])
   data[[y_var]] <- as.numeric(data[[y_var]])
@@ -153,4 +177,37 @@ ggplot() +
        y = "Variable Value",
        color = "Dataset") +
   scale_color_manual(values = c("red", "blue", "green", "purple"))
+```
+```{r hri-emer-by-co2}
+co2.yearly.mean <- co2 %>%
+        group_by(year) %>%
+        summarise(ppm = mean(ppm))
+
+hri.emer.yearly.mean <- hri.emer %>%
+        group_by(year) %>%
+        summarise(emer.per.capita = mean(emer.per.capita))
+
+hri.emer.co2 <- hri.emer.yearly.mean %>%
+        left_join(co2.yearly.mean, by = join_by(year))
+
+summary(lm(emer.per.capita ~ ppm, data=hri.emer.co2))
+
+ggplot(hri.emer.co2, aes(ppm, emer.per.capita)) +
+        geom_point() +
+        geom_smooth(method="lm", se=TRUE)
+```
+
+```{r hri-hosp-by-co2}
+hri.hosp.yearly.mean <- hri.hosp %>%
+  group_by(year) %>%
+  summarise(hosp.per.capita = mean(hosp.per.capita))
+
+hri.hosp.co2 <- hri.hosp.yearly.mean %>%
+  left_join(co2.yearly.mean, by = join_by(year))
+
+summary(lm(hosp.per.capita ~ ppm, data=hri.hosp.co2))
+
+ggplot(hri.hosp.co2, aes(ppm, hosp.per.capita)) +
+  geom_point() +
+  geom_smooth(method="lm", se=TRUE)
 ```

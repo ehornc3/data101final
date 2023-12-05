@@ -16,4 +16,9 @@
 
 # Atmospheric C02 Concentration
 <https://climatedata.imf.org/datasets/9c3764c0efcc4c71934ab3988f219e0e/explore>
-- Atmospheric_CO2_Concentration
+- Atmospheric_CO2_Concentration.csv
+
+# Temperature Data by State
+<https://www.kaggle.com/datasets/thedevastator/analyzing-u-s-warming-rates-insights-into-climat>
+- climdiv_state_year.csv
+- model_state.csv
