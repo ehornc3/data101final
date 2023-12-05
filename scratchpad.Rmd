@@ -74,7 +74,9 @@ co2 <- co2.raw %>%
 temp.state <- temp.state.raw %>%
   filter(year >= 2000) %>%
   left_join(temp.state.states, by = join_by(fips)) %>%
-  select(year, temp, STUSAB, STATE_NAME)
+  select(year, temp, STUSAB, STATE_NAME) %>%
+  rename(state.code = STUSAB,
+         state      = STATE_NAME)
 
 # temps <- global.lt.state %>%
 #         filter(Country == "United States") %>%
@@ -143,7 +145,7 @@ co2$year <- year(co2$date)
 co2
 ```
 
-```{r co2_graph}
+```{r co2_graph, eval=FALSE}
 poly_smooth <- function(data, degree, x_var, y_var) {
   data[[x_var]] <- as.numeric(data[[x_var]])
   data[[y_var]] <- as.numeric(data[[y_var]])
@@ -178,6 +180,7 @@ ggplot() +
        color = "Dataset") +
   scale_color_manual(values = c("red", "blue", "green", "purple"))
 ```
+
 ```{r hri-emer-by-co2}
 co2.yearly.mean <- co2 %>%
         group_by(year) %>%
