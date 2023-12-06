@@ -12,6 +12,8 @@ library(ggplot2)
 set.seed(19)
 library(lubridate)
 library(gghighlight)
+library(plotly)
+library(ggrepel)
 ```
 
 ```{r load_data, message=FALSE}
@@ -177,39 +179,22 @@ summary(co2.model)
 ```
 
 ```{r co2_graph, eval=FALSE}
-poly_smooth <- function(data, degree, x_var, y_var) {
-  data[[x_var]] <- as.numeric(data[[x_var]])
-  data[[y_var]] <- as.numeric(data[[y_var]])
 
-  # Check if there are enough unique points for the specified degree
-  if (length(unique(data[[x_var]])) <= degree) {
-    stop("'degree' must be less than the number of unique points.")
-  }
+box_plot <- plot_ly(hri.emer, x = ~factor(year), y = ~emer.per.capita, type = 'box', boxpoints = "outliers", jitter = 0.3, pointpos = -1.8, outliercolor = "red", text = ~state, textposition = "bottom center")
 
-  model <- lm(data[[y_var]] ~ poly(data[[x_var]], degree), data = data)
-  
-  newdata <- data.frame(x = seq(min(data[[x_var]]), max(data[[x_var]]), length.out = 100))
-  newdata[[y_var]] <- predict(model, newdata = data.frame(x = newdata$x))
-  
-  return(newdata)
-}
+# You can customize the appearance or add interactivity as needed
+box_plot <- box_plot %>% layout(title = "Box Plot of Emergency Room Visits Per Capita Over Years")
 
-poly_smooth_hri_emer <- poly_smooth(merge(co2, hri.emer, by.x = "date", by.y = "year"), 2, "ppm", "emer.per.capita")
-poly_smooth_hri_hosp <- poly_smooth(merge(co2, hri.hosp, by.x = "date", by.y = "year"), 2, "ppm", "hosp.per.capita")
-poly_smooth_hri_mort <- poly_smooth(merge(co2, hri.mort, by.x = "date", by.y = "year"), 2, "ppm", "mortalities.total")
+box_plot
 
-# Combine all datasets in one graph
-ggplot() +
-  geom_point(data = co2, aes(ppm, Value), color = "purple") +
-  geom_line(data = poly_smooth_hri_emer, aes(x, emer.per.capita), color = "red", linetype = "solid") +
-  geom_line(data = poly_smooth_hri_hosp, aes(x, hosp.per.capita), color = "blue", linetype = "solid") +
-  geom_line(data = poly_smooth_hri_mort, aes(x, mortalities.total), color = "green", linetype = "solid") +
-  labs(title = "Polynomial Regression",
-       subtitle = "Combined Graph for Multiple Datasets",
-       x = "PPM (Parts Per Million)",
-       y = "Variable Value",
-       color = "Dataset") +
-  scale_color_manual(values = c("red", "blue", "green", "purple"))
+
+ggplot(hri.emer, aes(x = factor(year), y = emer.per.capita)) +
+  geom_boxplot(outlier.colour = "red", position = position_dodge(0.8)) +
+  geom_text_repel(data = hri.emer %>% group_by(year) %>% filter(emer.per.capita > quantile(emer.per.capita, 0.75) + 1.5*IQR(emer.per.capita) | emer.per.capita < quantile(emer.per.capita, 0.25) - 1.5*IQR(emer.per.capita)),
+                  aes(label = state),
+                  box.padding = 0.5, show.legend = FALSE) +
+  labs(title = "Box Plot of Emergency Room Visits Per Capita Over Years") +
+  theme_minimal()
 ```
 
 ```{r hri-emer-by-co2}
