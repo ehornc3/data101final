@@ -196,6 +196,32 @@ ggplot(hri.emer, aes(x = factor(year), y = emer.per.capita)) +
   labs(title = "Box Plot of Emergency Room Visits Per Capita Over Years") +
   theme_minimal()
 ```
+```{r}
+ggplot(hri.hosp, aes(x = factor(year), y = hosp.per.capita)) +
+  geom_boxplot(outlier.colour = "red", position = position_dodge(0.8)) +
+  geom_text_repel(data = hri.hosp %>% group_by(year) %>% filter(hosp.per.capita > quantile(hosp.per.capita, 0.75) + 1.5*IQR(hosp.per.capita) | hosp.per.capita < quantile(hosp.per.capita, 0.25) - 1.5*IQR(hosp.per.capita)),
+                  aes(label = state),
+                  box.padding = 0.5, show.legend = FALSE) +
+  labs(title = "Box Plot of Hospital Visits Per Capita Over Years") +
+  theme_minimal()
+```
+```{r}
+ggplot(hri.mort, aes(x = factor(year), y = mortalities.total)) +
+  geom_boxplot(outlier.colour = "red", position = position_dodge(0.8)) +
+  geom_text_repel(data = hri.mort %>% group_by(year) %>% filter(mortalities.total > quantile(mortalities.total, 0.75) + 1.5*IQR(mortalities.total) | mortalities.total < quantile(mortalities.total, 0.25) - 1.5*IQR(mortalities.total)),
+                  aes(label = state),
+                  box.padding = 0.5, show.legend = FALSE) +
+  labs(title = "Box Plot of Mortality Per Capita Over Years") +
+  theme_minimal()
+
+ggplot(hri.mort, aes(x = factor(year), y = mortalities.total)) +
+  geom_boxplot(outlier.colour = "red", position = position_dodge(0.8)) +
+  geom_text_repel(data = hri.mort %>% group_by(year) %>% filter(mortalities.total > quantile(mortalities.total, 0.75) + 1.5*IQR(mortalities.total) | mortalities.total < quantile(mortalities.total, 0.25) - 1.5*IQR(mortalities.total)),
+                  aes(label = state),
+                  box.padding = 0.5, show.legend = FALSE, max.overlaps = Inf) +
+  labs(title = "Box Plot of Mortality Per Capita Over Years") +
+  theme_minimal()
+```
 
 ```{r hri-emer-by-co2}
 co2.yearly.mean <- co2 %>%
