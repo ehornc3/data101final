@@ -16,6 +16,8 @@ library(plotly)
 library(ggrepel)
 ```
 
+# Data Preprocessing
+
 ```{r load_data, message=FALSE}
 hri.emer.raw          <- jsonlite::fromJSON('datasets/hri_emergencyvisits.json')
 hri.hosp.raw          <- jsonlite::fromJSON('datasets/hri_hospitalization.json')
@@ -66,8 +68,7 @@ co2 <- co2.raw %>%
          date  = paste0(date, '-01'),
          date  = as.Date(date),
          year  = lubridate::year(date),
-         month = lubridate::month(date)) %>%
-  filter(date >= as.Date("2000-01-01"))
+         month = lubridate::month(date))
 
 temp.state <- temp.state.raw %>%
   filter(year >= 2000) %>%
@@ -76,6 +77,8 @@ temp.state <- temp.state.raw %>%
   rename(state.code = STUSAB,
          state      = STATE_NAME)
 ```
+
+# Exploratory Data Analysis
 
 ```{r emer_cor}
 hri.emer.model <- lm(emer.per.capita ~ year, data=hri.emer)
@@ -94,12 +97,12 @@ ggplot(hri.emer, aes(factor(year), emer.per.capita)) +
              x     = "Year",
              y     = "Emergency Room visits per Capita (100,000)")
 
-ggplot(hri.emer, aes(year, emer.per.capita)) +
-        geom_point() +
-        gghighlight(emer.per.capita >= quantile(emer.per.capita, .99), label_key = state, use_group_by = FALSE) +
-        labs(title = "Yearly HRI Emergency Room Visits per Capita by State",
-             x     = "Year",
-             y     = "Emergency Room visits per Capita (100,000)")
+ggplot(hri.emer, aes(factor(year), emer.per.capita)) +
+  geom_boxplot(outlier.colour = "red") +
+  geom_text_repel(data = hri.emer %>% group_by(year) %>% filter(emer.per.capita > quantile(emer.per.capita, 0.75) + 1.5*IQR(emer.per.capita)), aes(label = state), show.legend = FALSE) +
+  labs(title = "Yearly HRI Emergency Room Visits per Capita by State",
+       x     = "Year",
+       y     = "Emergency Room Visits per Capita (100,000)")
 
 summary(hri.emer.model)
 ```
@@ -116,17 +119,17 @@ ggplot(hri.hosp, aes(year, hosp.per.capita)) +
        y     = "Hospitalizations per Capita (100,000)")
 
 ggplot(hri.hosp, aes(factor(year), hosp.per.capita)) +
-        geom_boxplot() +
-        labs(title = "Yearly HRI Hospitalizations per Capita by State",
-             x     = "Year",
-             y     = "Hospitalizations per Capita (100,000)")
+  geom_boxplot() +
+  labs(title = "Yearly HRI Hospitalizations per Capita by State",
+       x     = "Year",
+       y     = "Hospitalizations per Capita (100,000)")
 
-ggplot(hri.hosp, aes(year, hosp.per.capita, state)) +
-        geom_point() +
-        gghighlight(hosp.per.capita >= quantile(hosp.per.capita, .99), label_key = state, use_group_by = FALSE) +
-        labs(title = "Yearly HRI Hospitalizations per Capita by State",
-             x     = "Year",
-             y     = "Hospitalizations per Capita (100,000)")
+ggplot(hri.hosp, aes(factor(year), hosp.per.capita)) +
+  geom_boxplot(outlier.colour = "red") +
+  geom_text_repel(data = hri.hosp %>% group_by(year) %>% filter(hosp.per.capita > quantile(hosp.per.capita, 0.75) + 1.5*IQR(hosp.per.capita)), aes(label = state), show.legend = FALSE) +
+  labs(title = "Yearly HRI Hospitalizations per Capita by State",
+       x     = "Year",
+       y     = "Hospitalizations per Capita (100,000)")
 
 summary(hri.hosp.model)
 ```
@@ -142,10 +145,17 @@ ggplot(hri.mort, aes(year, mortalities.total)) +
        y     = "HRI Related Mortalities (Total)")
 
 ggplot(hri.mort, aes(factor(year), mortalities.total)) +
-        geom_boxplot() +
-        labs(title = "Yearly HRI Mortalities by State",
-             x     = "Year",
-             y     = "HRI Related Mortalities (Total)")
+  geom_boxplot() +
+  labs(title = "Yearly HRI Mortalities by State",
+       x     = "Year",
+       y     = "HRI Related Mortalities (Total)")
+
+ggplot(hri.mort, aes(factor(year), mortalities.total)) +
+  geom_boxplot(outlier.colour = "red") +
+  geom_text_repel(data = hri.mort %>% group_by(year) %>% filter(mortalities.total > quantile(mortalities.total, 0.75) + 1.5*IQR(mortalities.total)), aes(label = state), show.legend = FALSE) +
+  labs(title = "Yearly HRI Mortalities by State",
+       x     = "Year",
+       y     = "HRI Related Mortalities (Total)")
 
 summary(hri.mort.model)
 ```
@@ -161,7 +171,7 @@ ggplot(temp.state, aes(year, temp, fill = state, colour = state)) +
 
 ggplot(temp.state, aes(factor(year), temp)) +
         geom_boxplot() +
-        labs(title = "Yearly Average Temperature by State",
+        labs(title = "Yearly Average Temperature",
              x     = "Year",
              y     = "Mean Yearly Temperature (deg F)")
 
@@ -169,33 +179,28 @@ summary(temp.state.model)
 ```
 
 ```{r co2_cor}
+ggplot(co2, aes(date, ppm)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = TRUE) +
+  labs(title = "Monthly Atmospheric Carbon Dioxide Concentrations (1958 - 2023)",
+       x     = "Date",
+       y     = "Average Global Atmospheric CO2 Concentration (ppm)")
+
+co2 <- co2 %>% filter(date >= as.Date("2000-01-01"))
+
 co2.model <- lm(ppm ~ date, data= co2)
 
 ggplot(co2, aes(date, ppm)) +
   geom_point() +
-  geom_smooth(method = "lm", se = TRUE)
+  geom_smooth(method = "lm", se = TRUE) +
+  labs(title = "Monthly Atmospheric Carbon Dioxide Concentrations (2000 - 2023)",
+       x     = "Date",
+       y     = "Average Global Atmospheric CO2 Concentration (ppm)")
 
 summary(co2.model)
 ```
 
-```{r co2_graph, eval=FALSE}
-ggplot(hri.emer, aes(x = factor(year), y = emer.per.capita)) +
-  geom_boxplot(outlier.colour = "red", position = position_dodge(0.8)) +
-  geom_text_repel(data = hri.emer %>% group_by(year) %>% filter(emer.per.capita > quantile(emer.per.capita, 0.75) + 1.5*IQR(emer.per.capita) | emer.per.capita < quantile(emer.per.capita, 0.25) - 1.5*IQR(emer.per.capita)),
-                  aes(label = state),
-                  box.padding = 0.5, show.legend = FALSE) +
-  labs(title = "Box Plot of Emergency Room Visits Per Capita Over Years") +
-  theme_minimal()
-```
-```{r}
-ggplot(hri.hosp, aes(x = factor(year), y = hosp.per.capita)) +
-  geom_boxplot(outlier.colour = "red", position = position_dodge(0.8)) +
-  geom_text_repel(data = hri.hosp %>% group_by(year) %>% filter(hosp.per.capita > quantile(hosp.per.capita, 0.75) + 1.5*IQR(hosp.per.capita) | hosp.per.capita < quantile(hosp.per.capita, 0.25) - 1.5*IQR(hosp.per.capita)),
-                  aes(label = state),
-                  box.padding = 0.5, show.legend = FALSE) +
-  labs(title = "Box Plot of Hospital Visits Per Capita Over Years") +
-  theme_minimal()
-```
+# Simple Linear Regressions
 
 ```{r hri-emer-by-co2}
 co2.yearly.mean <- co2 %>%
@@ -213,7 +218,10 @@ summary(lm(emer.per.capita ~ ppm, data=hri.emer.co2))
 
 ggplot(hri.emer.co2, aes(ppm, emer.per.capita)) +
         geom_point() +
-        geom_smooth(method="lm", se=TRUE)
+        geom_smooth(method="lm", se=TRUE) +
+  labs(title = "Average National HRI Emergency Room Visits by Yearly Average Atmospheric CO2 Concentration",
+       x     = "Global Yearly Average Atmospheric CO2 Concentration (ppm)",
+       y     = "National US Emergency Room Visits per Capita (100,000) for HRI")
 ```
 
 ```{r hri-hosp-by-co2}
@@ -228,8 +236,13 @@ summary(lm(hosp.per.capita ~ ppm, data=hri.hosp.co2))
 
 ggplot(hri.hosp.co2, aes(ppm, hosp.per.capita)) +
   geom_point() +
-  geom_smooth(method="lm", se=TRUE)
+  geom_smooth(method="lm", se=TRUE) +
+  labs(title = "Average National HRI Hospitalizations by Yearly Average Atmospheric CO2 Concentration",
+       x     = "Global Yearly Average Atmospheric CO2 Concentration (ppm)",
+       y     = "National US Hospitalizations per Capita (100,000) for HRI")
 ```
+
+# Multiple Linear Regressions
 
 ```{r emer-by-co2-temp}
 hri.emer.co2.temp <- hri.emer.co2 %>%
