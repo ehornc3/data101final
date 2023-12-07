@@ -2,7 +2,9 @@
 title: "scratchpad"
 author: "Ethan Horn, David Lopez"
 date: "2023-11-17"
-output: word_document
+output:
+  html_document:
+    df_print: paged
 ---
 
 ```{r setup, include=FALSE, message=FALSE}
@@ -164,10 +166,18 @@ summary(hri.mort.model)
 temp.state.model <- lm(temp ~ year, data=temp.state)
 
 ggplot(temp.state, aes(year, temp, fill = state, colour = state)) +
-        geom_line() +
+        geom_line(show.legend = FALSE) +
         labs(title = "Yearly Average Temperature by State",
              x     = "Year",
              y     = "Mean Yearly Temperature (deg F)")
+
+ggplot(temp.state, aes(year, temp, fill = state, colour = state)) +
+  geom_line(show.legend = FALSE) +
+  labs(title = "Yearly Average Temperature by State",
+       x     = "Year",
+       y     = "Mean Yearly Temperature (deg F)") +
+  gghighlight(max(temp) > 67)
+
 
 ggplot(temp.state, aes(factor(year), temp)) +
         geom_boxplot() +
