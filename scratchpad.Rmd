@@ -75,9 +75,10 @@ co2 <- co2.raw %>%
 temp.state <- temp.state.raw %>%
   filter(year >= 2000) %>%
   left_join(temp.state.states, by = join_by(fips)) %>%
-  select(year, temp, STUSAB, STATE_NAME) %>%
-  rename(state.code = STUSAB,
-         state      = STATE_NAME)
+  select(year, temp, STUSAB, STATE_NAME, STATE_REGION) %>%
+  rename(state.code   = STUSAB,
+         state        = STATE_NAME,
+         state.region = STATE_REGION)
 ```
 
 # Exploratory Data Analysis
@@ -97,14 +98,16 @@ ggplot(hri.emer, aes(factor(year), emer.per.capita)) +
         geom_boxplot() +
         labs(title = "Yearly HRI Emergency Room Visits per Capita by State",
              x     = "Year",
-             y     = "Emergency Room visits per Capita (100,000)")
+             y     = "Emergency Room visits per Capita (100,000)") +
+  scale_x_discrete(guide = guide_axis(angle = 90))
 
 ggplot(hri.emer, aes(factor(year), emer.per.capita)) +
   geom_boxplot(outlier.colour = "red") +
   geom_text_repel(data = hri.emer %>% group_by(year) %>% filter(emer.per.capita > quantile(emer.per.capita, 0.75) + 1.5*IQR(emer.per.capita)), aes(label = state), show.legend = FALSE) +
   labs(title = "Yearly HRI Emergency Room Visits per Capita by State",
        x     = "Year",
-       y     = "Emergency Room Visits per Capita (100,000)")
+       y     = "Emergency Room Visits per Capita (100,000)") +
+  scale_x_discrete(guide = guide_axis(angle = 90))
 
 summary(hri.emer.model)
 ```
@@ -124,14 +127,16 @@ ggplot(hri.hosp, aes(factor(year), hosp.per.capita)) +
   geom_boxplot() +
   labs(title = "Yearly HRI Hospitalizations per Capita by State",
        x     = "Year",
-       y     = "Hospitalizations per Capita (100,000)")
+       y     = "Hospitalizations per Capita (100,000)") +
+  scale_x_discrete(guide = guide_axis(angle = 90))
 
 ggplot(hri.hosp, aes(factor(year), hosp.per.capita)) +
   geom_boxplot(outlier.colour = "red") +
   geom_text_repel(data = hri.hosp %>% group_by(year) %>% filter(hosp.per.capita > quantile(hosp.per.capita, 0.75) + 1.5*IQR(hosp.per.capita)), aes(label = state), show.legend = FALSE) +
   labs(title = "Yearly HRI Hospitalizations per Capita by State",
        x     = "Year",
-       y     = "Hospitalizations per Capita (100,000)")
+       y     = "Hospitalizations per Capita (100,000)") +
+  scale_x_discrete(guide = guide_axis(angle = 90))
 
 summary(hri.hosp.model)
 ```
@@ -150,14 +155,16 @@ ggplot(hri.mort, aes(factor(year), mortalities.total)) +
   geom_boxplot() +
   labs(title = "Yearly HRI Mortalities by State",
        x     = "Year",
-       y     = "HRI Related Mortalities (Total)")
+       y     = "HRI Related Mortalities (Total)") +
+  scale_x_discrete(guide = guide_axis(angle = 90))
 
 ggplot(hri.mort, aes(factor(year), mortalities.total)) +
   geom_boxplot(outlier.colour = "red") +
   geom_text_repel(data = hri.mort %>% group_by(year) %>% filter(mortalities.total > quantile(mortalities.total, 0.75) + 1.5*IQR(mortalities.total)), aes(label = state), show.legend = FALSE) +
   labs(title = "Yearly HRI Mortalities by State",
        x     = "Year",
-       y     = "HRI Related Mortalities (Total)")
+       y     = "HRI Related Mortalities (Total)") +
+  scale_x_discrete(guide = guide_axis(angle = 90))
 
 summary(hri.mort.model)
 ```
@@ -165,25 +172,28 @@ summary(hri.mort.model)
 ```{r temp_cor}
 temp.state.model <- lm(temp ~ year, data=temp.state)
 
-ggplot(temp.state, aes(year, temp, fill = state, colour = state)) +
-        geom_line(show.legend = FALSE) +
+ggplot(temp.state, aes(year, temp, fill = state, colour = state.region)) +
+        geom_line(show.legend = TRUE) +
         labs(title = "Yearly Average Temperature by State",
              x     = "Year",
-             y     = "Mean Yearly Temperature (deg F)")
+             y     = "Mean Yearly Temperature (deg F)",
+             colour = "State Region") +
+        guides(fill = "none")
 
 ggplot(temp.state, aes(year, temp, fill = state, colour = state)) +
   geom_line(show.legend = FALSE) +
   labs(title = "Yearly Average Temperature by State",
        x     = "Year",
        y     = "Mean Yearly Temperature (deg F)") +
-  gghighlight(max(temp) > 67)
+  gghighlight(max(temp) > 67 | min(temp) < 40)
 
 
 ggplot(temp.state, aes(factor(year), temp)) +
         geom_boxplot() +
         labs(title = "Yearly Average Temperature",
              x     = "Year",
-             y     = "Mean Yearly Temperature (deg F)")
+             y     = "Mean Yearly Temperature (deg F)") +
+  scale_x_discrete(guide = guide_axis(angle = 90))
 
 summary(temp.state.model)
 ```
