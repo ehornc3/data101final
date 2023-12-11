@@ -14,25 +14,25 @@ library(ggplot2)
 set.seed(19)
 library(lubridate)
 library(gghighlight)
-library(plotly)
 library(ggrepel)
 ```
 
 # Data Preprocessing
 
 ```{r load_data, message=FALSE}
-hri.emer.raw          <- jsonlite::fromJSON('datasets/hri_emergencyvisits.json')
-hri.hosp.raw          <- jsonlite::fromJSON('datasets/hri_hospitalization.json')
-hri.mort.raw          <- jsonlite::fromJSON('datasets/hri_mortality.json')
+raw <- {}
+raw$hri.emer           <- jsonlite::fromJSON('datasets/hri_emergencyvisits.json')
+raw$hri.hosp           <- jsonlite::fromJSON('datasets/hri_hospitalization.json')
+raw$hri.mort           <- jsonlite::fromJSON('datasets/hri_mortality.json')
 
-co2.raw               <- read_csv('datasets/Atmospheric_CO2_Concentrations.csv')
+raw$co2                <- read_csv('datasets/Atmospheric_CO2_Concentrations.csv')
 
-temp.state.raw        <- read_csv('datasets/climdiv_state_year.csv')
-temp.state.states     <- read_csv('datasets/model_state.csv')
-temp.state.regions    <- read_csv('datasets/state-region.csv')
+raw$temp.state         <- read_csv('datasets/climdiv_state_year.csv')
+raw$temp.state.states  <- read_csv('datasets/model_state.csv')
+raw$temp.state.regions <- read_csv('datasets/state-region.csv')
 ```
 ```{r tidy_data}
-hri.emer <- hri.emer.raw$tableResult %>%
+hri.emer <- raw$hri.emer$tableResult %>%
   filter(hatchingId == -1) %>%  # Filter out "Unstable" points of data
   select(geo, geoId, year, dataValue) %>%
   rename(state           = geo,
@@ -42,7 +42,7 @@ hri.emer <- hri.emer.raw$tableResult %>%
          year            = as.numeric(year),
          emer.per.capita = as.numeric(emer.per.capita))
 
-hri.hosp <- hri.hosp.raw$tableResult %>%
+hri.hosp <- raw$hri.hosp$tableResult %>%
   filter(hatchingId == -1) %>%  # Filter out "Unstable" points of data
   select(geo, geoId, year, dataValue) %>%
   rename(state           = geo,
@@ -52,7 +52,7 @@ hri.hosp <- hri.hosp.raw$tableResult %>%
          year            = as.numeric(year),
          hosp.per.capita = as.numeric(hosp.per.capita))
 
-hri.mort <- hri.mort.raw$tableResult %>%
+hri.mort <- raw$hri.mort$tableResult %>%
   filter(suppressionFlag == 0) %>% # Filter out "Suppressed" points of data
   select(geo, geoId, year, dataValue) %>%
   rename(state             = geo,
@@ -62,7 +62,7 @@ hri.mort <- hri.mort.raw$tableResult %>%
          year              = as.numeric(year),
          mortalities.total = as.numeric(mortalities.total))
 
-co2 <- co2.raw %>%
+co2 <- raw$co2 %>%
   filter(Unit == "Parts Per Million") %>%
   select(Date, Value) %>%
   rename(date = Date,
@@ -73,10 +73,10 @@ co2 <- co2.raw %>%
          year  = lubridate::year(date),
          month = lubridate::month(date))
 
-temp.state <- temp.state.raw %>%
+temp.state <- raw$temp.state %>%
   filter(year >= 2000) %>%
-  left_join(temp.state.states, by = join_by(fips)) %>%
-  left_join(temp.state.regions, by = join_by(STATE_NAME)) %>%
+  left_join(raw$temp.state.states,  by = join_by(fips)) %>%
+  left_join(raw$temp.state.regions, by = join_by(STATE_NAME)) %>%
   select(year, temp, STUSAB, STATE_NAME, region) %>%
   rename(state.code   = STUSAB,
          state        = STATE_NAME,
@@ -302,3 +302,7 @@ hri.hosp.temp.co2 <- hri.hosp.temp %>%
 summary(lm(emer.per.capita ~ ppm + temp, data = hri.emer.temp.co2))
 summary(lm(hosp.per.capita ~ ppm + temp, data = hri.hosp.temp.co2))
 ```
+
+# Model Testing
+
+Here, the data is split into training and testing data. The multiple linear regression model is built upon the training data, and its accuracy in predicting the testing data is measured.
