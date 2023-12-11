@@ -1,6 +1,6 @@
 ---
 title: "scratchpad"
-author: "Ethan Horn, David Lopez"
+author: "Ethan Horn, David Lopez, Alec Libroia"
 date: "2023-11-17"
 output:
   html_document:
