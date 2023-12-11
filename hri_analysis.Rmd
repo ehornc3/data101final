@@ -92,8 +92,6 @@ The following sections visualize each dataset, to analyze for abnormalities in e
 The first graph plots each observation in the emergency room visits dataset, by the number of visits per capita and the year the observation was recorded. Each point on the plot represents a different state's record. Also plotted in this graph is the least squares regression line, and an imposed line graph that tracks the average visits per capita, nationwide. The second graph shows the variability between years in this dataset. The third graph highlights the outliers in the second graph.
 
 ```{r emer_cor}
-hri.emer.model <- lm(emer.per.capita ~ year, data=hri.emer)
-
 ggplot(hri.emer, aes(year, emer.per.capita)) +
   geom_point() +
   geom_smooth(method = "lm", se = TRUE) +
@@ -117,15 +115,13 @@ ggplot(hri.emer, aes(factor(year), emer.per.capita)) +
        y     = "Emergency Room Visits per Capita (100,000)") +
   scale_x_discrete(guide = guide_axis(angle = 90))
 
-summary(hri.emer.model)
+summary(lm(emer.per.capita ~ year, data = hri.emer))
 ```
 
 ## Hospitalizations
 The first graph plots each observation in the hospitalizations dataset, by the number of visits per capita and the year the observation was recorded. Each point on the plot represents a different state's record. Also plotted in this graph is the least squares regression line, and an imposed line graph that tracks the average hospitalizations per capita, nationwide. The second graph shows the variability between years in this dataset. The third graph highlights the outliers in the second graph.
 
 ```{r hosp_cor}
-hri.hosp.model <- lm(hosp.per.capita ~ year, data=hri.hosp)
-
 ggplot(hri.hosp, aes(year, hosp.per.capita)) +
   geom_point() +
   geom_smooth(method = "lm", se = TRUE) +
@@ -149,15 +145,13 @@ ggplot(hri.hosp, aes(factor(year), hosp.per.capita)) +
        y     = "Hospitalizations per Capita (100,000)") +
   scale_x_discrete(guide = guide_axis(angle = 90))
 
-summary(hri.hosp.model)
+summary(lm(hosp.per.capita ~ year, data = hri.hosp))
 ```
 
 ## Mortality
 Here, the mortality dataset is visualized using similar methods as used for the emergency room visits and hospitalizations datasets. Due to the high variability of the dataset, seen by the large number of outliers, this dataset will not be used for further analysis.
 
 ```{r mort_cor}
-hri.mort.model <- lm(mortalities.total ~ year, data=hri.mort)
-
 ggplot(hri.mort, aes(year, mortalities.total)) +
   geom_point() +
   geom_smooth(method = "lm", se = TRUE) +
@@ -180,15 +174,13 @@ ggplot(hri.mort, aes(factor(year), mortalities.total)) +
        y     = "HRI Related Mortalities (Total)") +
   scale_x_discrete(guide = guide_axis(angle = 90))
 
-summary(hri.mort.model)
+summary(lm(mortalities.total ~ year, data=hri.mort))
 ```
 
 ## Temperature
 Here, we visualize the data in the temperature dataset. The first graph shows the change over time of yearly average temperature in each of the four regions of the United States. The second graph shows the highest three and lowest three outliers by average temperature. The final graph shows the variability in the data across each year.
 
 ```{r temp_cor}
-temp.state.model <- lm(temp ~ year, data=temp.state)
-
 ggplot(temp.state, aes(year, temp, fill = state, colour = state.region)) +
         geom_line(show.legend = TRUE) +
         labs(title = "Yearly Average Temperature by State",
@@ -212,7 +204,7 @@ ggplot(temp.state, aes(factor(year), temp)) +
              y     = "Mean Yearly Temperature (deg F)") +
   scale_x_discrete(guide = guide_axis(angle = 90))
 
-summary(temp.state.model)
+summary(lm(temp ~ year, data = temp.state))
 ```
 
 ## Carbon Dioxide
@@ -228,8 +220,6 @@ ggplot(co2, aes(date, ppm)) +
 
 co2 <- co2 %>% filter(date >= as.Date("2000-01-01"))
 
-co2.model <- lm(ppm ~ date, data= co2)
-
 ggplot(co2, aes(date, ppm)) +
   geom_point() +
   geom_smooth(method = "lm", se = TRUE) +
@@ -237,7 +227,7 @@ ggplot(co2, aes(date, ppm)) +
        x     = "Date",
        y     = "Average Global Atmospheric CO2 Concentration (ppm)")
 
-summary(co2.model)
+summary(lm(ppm ~ date, data= co2))
 ```
 
 # Simple Linear Regressions
@@ -277,20 +267,38 @@ ggplot(hri.hosp.co2, aes(ppm, hosp.per.capita)) +
 ```
 
 ```{r hri-by-temp}
+hri.emer.temp <- hri.emer %>%
+  left_join(temp.state, by = join_by(state, year)) %>%
+  na.omit()
+hri.hosp.temp <- hri.hosp %>%
+  left_join(temp.state, by = join_by(state, year)) %>%
+  na.omit()
 
+summary(lm(emer.per.capita ~ temp, data=hri.emer.temp))
+summary(lm(hosp.per.capita ~ temp, data=hri.hosp.temp))
+
+ggplot(hri.emer.temp, aes(temp, emer.per.capita)) +
+  geom_point() +
+  geom_smooth(method="lm", se=TRUE) +
+  labs(title = "Average National HRI Emergency Room Visits by State Yearly Mean Temperature",
+       x     = "State Yearly Mean Temperature (deg F)",
+       y     = "National US Emergency Room Visits per Capita (100,000) for HRI")
+ggplot(hri.hosp.temp, aes(temp, hosp.per.capita)) +
+  geom_point() +
+  geom_smooth(method="lm", se=TRUE) +
+  labs(title = "Average National HRI Hospitalizations by State Yearly Mean Temperature",
+       x     = "State Yearly Mean Temperature (deg F)",
+       y     = "National US Hospitalizations per Capita (100,000) for HRI")
 ```
 
 # Multiple Linear Regressions
 
 ```{r hri-by-co2-temp}
-hri.emer.co2.temp <- hri.emer.co2 %>%
-  left_join(temp.state, by = join_by(year))
-hri.hosp.co2.temp <- hri.hosp.co2 %>%
-  left_join(temp.state, by = join_by(year))
+hri.emer.temp.co2 <- hri.emer.temp %>%
+  left_join(co2.yearly.mean, by = join_by(year))
+hri.hosp.temp.co2 <- hri.hosp.temp %>%
+  left_join(co2.yearly.mean, by = join_by(year))
 
-hri.emer.co2.temp.model <- lm(emer.per.capita ~ ppm + temp, data = hri.emer.co2.temp)
-hri.hosp.co2.temp.model <- lm(hosp.per.capita ~ ppm + temp, data = hri.hosp.co2.temp)
-
-summary(hri.emer.co2.temp.model)
-summary(hri.hosp.co2.temp.model)
+summary(lm(emer.per.capita ~ ppm + temp, data = hri.emer.temp.co2))
+summary(lm(hosp.per.capita ~ ppm + temp, data = hri.hosp.temp.co2))
 ```
