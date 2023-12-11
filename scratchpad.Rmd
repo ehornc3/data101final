@@ -29,6 +29,7 @@ co2.raw               <- read_csv('datasets/Atmospheric_CO2_Concentrations.csv')
 
 temp.state.raw        <- read_csv('datasets/climdiv_state_year.csv')
 temp.state.states     <- read_csv('datasets/model_state.csv')
+temp.state.regions    <- read_csv('datasets/state-region.csv')
 ```
 ```{r tidy_data}
 hri.emer <- hri.emer.raw$tableResult %>%
@@ -75,10 +76,11 @@ co2 <- co2.raw %>%
 temp.state <- temp.state.raw %>%
   filter(year >= 2000) %>%
   left_join(temp.state.states, by = join_by(fips)) %>%
-  select(year, temp, STUSAB, STATE_NAME, STATE_REGION) %>%
+  left_join(temp.state.regions, by = join_by(STATE_NAME)) %>%
+  select(year, temp, STUSAB, STATE_NAME, region) %>%
   rename(state.code   = STUSAB,
          state        = STATE_NAME,
-         state.region = STATE_REGION)
+         state.region = region)
 ```
 
 # Exploratory Data Analysis
