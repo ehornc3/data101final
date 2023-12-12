@@ -10,11 +10,11 @@ output:
 ```{r setup, include=FALSE, message=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
-library(ggplot2)
-set.seed(19)
+library(tidymodels)
 library(lubridate)
 library(gghighlight)
 library(ggrepel)
+set.seed(19)
 ```
 
 # Data Preprocessing
@@ -280,15 +280,15 @@ summary(lm(hosp.per.capita ~ temp, data=hri.hosp.temp))
 ggplot(hri.emer.temp, aes(temp, emer.per.capita)) +
   geom_point() +
   geom_smooth(method="lm", se=TRUE) +
-  labs(title = "Average National HRI Emergency Room Visits by State Yearly Mean Temperature",
+  labs(title = "HRI Emergency Room Visits by State Yearly Mean Temperature",
        x     = "State Yearly Mean Temperature (deg F)",
-       y     = "National US Emergency Room Visits per Capita (100,000) for HRI")
+       y     = "Emergency Room Visits per Capita (100,000) for HRI")
 ggplot(hri.hosp.temp, aes(temp, hosp.per.capita)) +
   geom_point() +
   geom_smooth(method="lm", se=TRUE) +
-  labs(title = "Average National HRI Hospitalizations by State Yearly Mean Temperature",
+  labs(title = "HRI Hospitalizations by State Yearly Mean Temperature",
        x     = "State Yearly Mean Temperature (deg F)",
-       y     = "National US Hospitalizations per Capita (100,000) for HRI")
+       y     = "Hospitalizations per Capita (100,000) for HRI")
 ```
 
 # Multiple Linear Regressions
@@ -306,3 +306,47 @@ summary(lm(hosp.per.capita ~ ppm + temp, data = hri.hosp.temp.co2))
 # Model Testing
 
 Here, the data is split into training and testing data. The multiple linear regression model is built upon the training data, and its accuracy in predicting the testing data is measured.
+
+```{r hri-by-co2-temp-training-emer}
+hri.emer.model <- {}
+hri.emer.model$split    <- initial_split(hri.emer.temp.co2)
+hri.emer.model$training <- training(hri.emer.model$split)
+hri.emer.model$testing  <- testing(hri.emer.model$split)
+hri.emer.model$model    <- linear_reg()
+hri.emer.model$recipe   <- recipe(emer.per.capita ~ ., data = hri.emer.model$training) %>%
+                             update_role(state, new_role = "ID") %>%
+                             step_dummy(state.region) %>%
+                             step_rm(year, state.id, state.code) %>%
+                             step_zv(all_predictors())
+hri.emer.model$workflow <- workflow() %>%
+                             add_model(hri.emer.model$model) %>%
+                             add_recipe(hri.emer.model$recipe)
+hri.emer.model$fit <- hri.emer.model$workflow %>% fit(hri.emer.model$training)
+summary(hri.emer.model$fit$fit$fit$fit)
+hri.emer.model$predict <- predict(hri.emer.model$fit, hri.emer.model$testing) %>%
+                            bind_cols(hri.emer.model$testing %>% select(emer.per.capita, state, year))
+rsq(hri.emer.model$predict, truth = emer.per.capita, estimate = .pred)
+rmse(hri.emer.model$predict, truth = emer.per.capita, estimate = .pred)
+```
+
+```{r hri-by-co2-temp-training-hosp}
+hri.hosp.model <- {}
+hri.hosp.model$split    <- initial_split(hri.hosp.temp.co2)
+hri.hosp.model$training <- training(hri.hosp.model$split)
+hri.hosp.model$testing  <- testing(hri.hosp.model$split)
+hri.hosp.model$model    <- linear_reg()
+hri.hosp.model$recipe   <- recipe(hosp.per.capita ~ ., data = hri.hosp.model$training) %>%
+                             update_role(state, new_role = "ID") %>%
+                             step_dummy(state.region) %>%
+                             step_rm(year, state.id, state.code) %>%
+                             step_zv(all_predictors())
+hri.hosp.model$workflow <- workflow() %>%
+                             add_model(hri.hosp.model$model) %>%
+                             add_recipe(hri.hosp.model$recipe)
+hri.hosp.model$fit <- hri.hosp.model$workflow %>% fit(hri.hosp.model$training)
+summary(hri.hosp.model$fit$fit$fit$fit)
+hri.hosp.model$predict <- predict(hri.hosp.model$fit, hri.hosp.model$testing) %>%
+                            bind_cols(hri.hosp.model$testing %>% select(hosp.per.capita, state, year))
+rsq(hri.hosp.model$predict, truth = hosp.per.capita, estimate = .pred)
+rmse(hri.hosp.model$predict, truth = hosp.per.capita, estimate = .pred)
+```
