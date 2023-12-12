@@ -19,6 +19,8 @@ set.seed(19)
 
 # Data Preprocessing
 
+Load in each dataset, store them in the `raw` object, to reduce namespace pollution. The raw datasets are not needed past the data preprocessing step, so they should not heavily pollute the namespace.
+
 ```{r load_data, message=FALSE}
 raw <- {}
 raw$hri.emer           <- jsonlite::fromJSON('datasets/hri_emergencyvisits.json')
@@ -31,6 +33,9 @@ raw$temp.state         <- read_csv('datasets/climdiv_state_year.csv')
 raw$temp.state.states  <- read_csv('datasets/model_state.csv')
 raw$temp.state.regions <- read_csv('datasets/state-region.csv')
 ```
+
+Now we must tidy the datasets, giving each column a consistent naming convention and logical type, and removing excess columns.
+
 ```{r tidy_data}
 hri.emer <- raw$hri.emer$tableResult %>%
   filter(hatchingId == -1) %>%  # Filter out "Unstable" points of data
@@ -232,6 +237,8 @@ summary(lm(ppm ~ date, data= co2))
 
 # Simple Linear Regressions
 
+This first section correlates each HRI incidence dataset with CO2 concentrations. First the yearly mean CO2 concentration must be calculated, and the national mean each year must also be calculated. Shown is the graph of each dataset with lines of best fit, and the summary of each linear regression model produced.
+
 ```{r hri-by-co2}
 co2.yearly.mean <- co2 %>%
   group_by(year) %>%
@@ -266,6 +273,8 @@ ggplot(hri.hosp.co2, aes(ppm, hosp.per.capita)) +
        y     = "National US Hospitalizations per Capita (100,000) for HRI")
 ```
 
+Now, each HRI incidence dataset is correlated with state yearly average temperature. The temperature dataset and HRI incidence datasets must be joined by both state and year, and both are required to identify a unique observation. Displayed is the grpah of each joined dataset, and the summaries of each simple linear regression model.
+
 ```{r hri-by-temp}
 hri.emer.temp <- hri.emer %>%
   left_join(temp.state, by = join_by(state, year)) %>%
@@ -293,6 +302,8 @@ ggplot(hri.hosp.temp, aes(temp, hosp.per.capita)) +
 
 # Multiple Linear Regressions
 
+Now, each HRI incidence dataset is correlated with both the indicators in the simple linear regression section. Shown is the summary printouts of each multiple linear regression model, one for emergency room visits and one for hospitalizations.
+
 ```{r hri-by-co2-temp}
 hri.emer.temp.co2 <- hri.emer.temp %>%
   left_join(co2.yearly.mean, by = join_by(year))
@@ -305,7 +316,7 @@ summary(lm(hosp.per.capita ~ ppm + temp, data = hri.hosp.temp.co2))
 
 # Model Testing
 
-Here, the data is split into training and testing data. The multiple linear regression model is built upon the training data, and its accuracy in predicting the testing data is measured.
+Here, the data is split into training and testing data. The multiple linear regression model is built upon the training data, and its accuracy in predicting the testing data is measured. The below is for the emergency room visits dataset. Shown is the summary of the fitted linear regression model, then the R-squared of the model when predicting the testing set, then the root mean squared error of the model when predicting the testing set.
 
 ```{r hri-by-co2-temp-training-emer}
 hri.emer.model <- {}
@@ -328,6 +339,8 @@ hri.emer.model$predict <- predict(hri.emer.model$fit, hri.emer.model$testing) %>
 rsq(hri.emer.model$predict, truth = emer.per.capita, estimate = .pred)
 rmse(hri.emer.model$predict, truth = emer.per.capita, estimate = .pred)
 ```
+
+We repeat the same steps on the hospitalizations dataset.
 
 ```{r hri-by-co2-temp-training-hosp}
 hri.hosp.model <- {}
